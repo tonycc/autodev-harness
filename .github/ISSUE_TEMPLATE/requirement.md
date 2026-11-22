@@ -22,4 +22,4 @@ labels: ["requirement"]
 
 ## 修改边界与完成定义（DoD）
 - 允许修改路径：（填写文件/目录白名单）
-- 必须通过命令：`make gate-mvp`（或 `make gate-all`）
+- 必须通过命令：`node scripts/gate.mjs gate-mvp`（或 `gate-all`）

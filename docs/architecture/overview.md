@@ -21,8 +21,8 @@
 - **鉴权与多租户隔离方式**：
 - **性能/时延基线**：
 
-## 4. 门禁适配清单（对应 `project.mk`）
-- `CMD_LINT`：
-- `CMD_TYPECHECK`：
-- `CMD_TEST_UNIT`（含覆盖率或报告产物路径）：
-- `CMD_TEST_E2E`：
+## 4. 门禁适配清单（对应 `harness.config.json`）
+- `commands.lint`：
+- `commands.typecheck`：
+- `commands.testUnit`（含覆盖率或报告产物路径）：
+- `commands.testE2e`：

@@ -25,4 +25,4 @@ description: 在使用 Vue 3 + Element Plus 的项目中编写或修改页面、
 ## 3. Vue 3 通用规范与测试
 - 全部使用 `<script setup lang="ts">`，禁止 Options API 与 `any` 断言；`defineProps` / `defineEmits` 使用 TS 泛型。
 - `.vue` 文件严禁直接导入 `axios` 或调用 `fetch`；异步页面须覆盖 **加载态（`v-loading`）、空态（`ElEmpty`）、错误态（含重试）、成功态**；禁止 `v-html` 渲染未消毒内容。
-- 使用 Vitest + `@vue/test-utils` 测试核心组件、`composables` 与 `stores`（Mock `feedback.ts` 并断言参数）；修改后必须通过 `make lint && make typecheck && make test-unit`。
+- 使用 Vitest + `@vue/test-utils` 测试核心组件、`composables` 与 `stores`（Mock `feedback.ts` 并断言参数）；修改后必须通过 `node scripts/gate.mjs gate-mvp`。

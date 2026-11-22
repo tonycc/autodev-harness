@@ -11,10 +11,10 @@ Closes #REQ-XXX
 | AC-2 | PASS | `artifacts/...` |
 
 ## 自动化门禁快照
-- [ ] 基座自检与防绕过（`make gate-harness`）
-- [ ] G0 静态检查（`make lint && make typecheck`）
-- [ ] G2 单元测试与覆盖率达标（`make test-unit`）
-- [ ] G3 容器集成与 E2E 回归（`make test-e2e`，如适用）
+- [ ] 基座自检与防绕过（`node scripts/gate.mjs gate-harness`）
+- [ ] G0 静态检查（`node scripts/gate.mjs lint` / `typecheck`）
+- [ ] G2 单元测试与覆盖率达标（`node scripts/gate.mjs test-unit`）
+- [ ] G3 容器集成与 E2E 回归（`node scripts/gate.mjs test-e2e`，如适用）
 - [ ] G4 跨模型独立 Reviewer 阻断项为 0（附 `artifacts/review.md`）
 
 ## 回滚方案

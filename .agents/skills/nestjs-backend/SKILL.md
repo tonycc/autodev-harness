@@ -24,4 +24,4 @@ description: 在使用 NestJS 的项目中编写或修改后端模块、接口�
 ## 3. 接口与测试要求
 - 新增或修改接口必须补充集成或 E2E 测试，至少覆盖：**正常流（2xx）+ 参数非法（400）+ 未授权/越权（401/403）**。
 - `Service` 层核心分支单元测试覆盖率 ≥ 80%。
-- 修改完成后必须通过 `make lint && make typecheck && make test-unit`。
+- 修改完成后必须通过：`node scripts/gate.mjs gate-mvp`。

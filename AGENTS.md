@@ -5,9 +5,9 @@
 ## 1. 通用工作流铁律（全项目适用，禁止削弱）
 1. **先读后写**：动手前必须先阅读 `docs/architecture/overview.md` 及本次任务涉及的 `.agents/skills/*/SKILL.md`。
 2. **严格遵守白名单**：仅修改需求单允许的路径及对应测试文件；禁止顺手重构无关模块、禁止升级未指定的依赖版本。
-3. **禁止篡改门禁基座**：除非需求单明确授权，严禁修改 `Makefile`、`project.mk`、`scripts/check-gate-integrity.sh`、`.github/workflows/ci.yml` 或调低测试覆盖率阈值。
+3. **禁止篡改门禁基座**：除非需求单明确授权，严禁修改 `harness.config.json`、`scripts/gate.mjs`、`scripts/check-gate-integrity.mjs`、`scripts/check-harness-health.mjs`、`.github/workflows/ci.yml` 或调低测试覆盖率阈值。
 4. **禁止绕过门禁**：严禁通过删除/跳过已有测试（`.skip` / `.only`）、添加 `@ts-ignore` / `@ts-nocheck` / `eslint-disable` / 覆盖率忽略注释来让门禁变绿。
-5. **禁止自编自审**：实现者不得评审自己的变更；提交前必须确保 `make gate-mvp`（或完整需求 `make gate-all`）退出码为 0。
+5. **禁止自编自审**：实现者不得评审自己的变更；提交前必须确保 `node scripts/gate.mjs gate-mvp`（或完整需求 `node scripts/gate.mjs gate-all`）退出码为 0。
 6. **证据驱动交付**：所有自动化报告必须输出至 `artifacts/` 目录（已被 `.gitignore` 忽略），PR 描述必须附带逐条 AC 与证据文件的映射表。
 
 ## 2. 通用安全与合规红线
