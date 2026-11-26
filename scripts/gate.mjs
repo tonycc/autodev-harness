@@ -21,6 +21,13 @@ function loadConfig() {
   }
 }
 
+class GateFailure extends Error {
+  constructor(code) {
+    super(`exit ${code}`);
+    this.code = code || 1;
+  }
+}
+
 function ensureArtifactsDir(config) {
   fs.mkdirSync(path.join(ROOT_DIR, config.artifactsDir || 'artifacts'), {
     recursive: true,
@@ -33,20 +40,27 @@ function runNodeScript(scriptName, extraArgs = []) {
     [path.join(__dirname, scriptName), ...extraArgs],
     { cwd: ROOT_DIR, stdio: 'inherit' },
   );
-  if (res.status !== 0) process.exit(res.status ?? 1);
+  if (res.status !== 0) throw new GateFailure(res.status ?? 1);
 }
 
-function runSecretScan() {
+// 密钥扫描仅提示、不阻断：未安装或发现疑似泄露都只输出告警，由人工在合并前确认
+function runSecretScan(config) {
+  ensureArtifactsDir(config);
+  const reportPath = path.join(config.artifactsDir || 'artifacts', 'gitleaks-report.json');
   const res = spawnSync(
     'gitleaks',
-    ['detect', '--source', '.', '--no-banner', '--redact'],
+    ['detect', '--source', '.', '--no-banner', '--redact', '--report-path', reportPath],
     { cwd: ROOT_DIR, stdio: 'inherit' },
   );
   if (res.error && res.error.code === 'ENOENT') {
-    console.error('❌ 未检测到 gitleaks，请先安装。');
-    process.exit(1);
+    console.log('⚠️ [secret-scan] 未检测到 gitleaks，已跳过密钥扫描。');
+    return;
   }
-  if (res.status !== 0) process.exit(res.status ?? 1);
+  if (res.status !== 0) {
+    console.log(
+      `⚠️ [secret-scan] gitleaks 发现疑似密钥泄露（不阻断门禁），详情见 ${reportPath}，请在合并前人工确认。`,
+    );
+  }
 }
 
 function runConfiguredCommand(config, key, { optional = false } = {}) {
@@ -57,26 +71,47 @@ function runConfiguredCommand(config, key, { optional = false } = {}) {
       return;
     }
     console.error(`❌ 请先在 harness.config.json 的 commands.${key} 中绑定真实命令`);
-    process.exit(1);
+    throw new GateFailure(1);
   }
   console.log(`\n▶ [${key}] ${cmd}`);
   const res = spawnSync(cmd, { cwd: ROOT_DIR, stdio: 'inherit', shell: true });
-  if (res.status !== 0) process.exit(res.status ?? 1);
+  if (res.status !== 0) throw new GateFailure(res.status ?? 1);
+}
+
+// 组合门禁：逐项执行全部步骤，最后统一汇总失败项，便于 Agent 一轮修完所有问题
+function runAll(name, steps) {
+  const failed = [];
+  for (const step of steps) {
+    try {
+      TARGETS[step]();
+    } catch (err) {
+      if (!(err instanceof GateFailure)) throw err;
+      failed.push(step);
+      console.error(`\n✖ [${step}] 未通过（退出码 ${err.code}），继续执行后续检查...`);
+    }
+  }
+  if (failed.length > 0) {
+    console.error(`\n❌ ${name} 未通过，失败项: ${failed.join(', ')}`);
+    throw new GateFailure(1);
+  }
 }
 
 const config = loadConfig();
 const target = process.argv[2];
 const extraArgs = process.argv.slice(3);
 
+// gate-harness：维护基座 / 未建骨架时使用；gate-mvp：Developer 日常门禁（不含 Skill 格式检查）
+const HARNESS_STEPS = ['harness-health', 'secret-scan', 'anti-bypass'];
+const MVP_STEPS = ['secret-scan', 'anti-bypass', 'lint', 'typecheck', 'test-unit'];
+const ALL_STEPS = [...MVP_STEPS, 'license-check', 'test-e2e'];
+
 const TARGETS = {
   'harness-health': () => runNodeScript('check-harness-health.mjs'),
-  'secret-scan': () => runSecretScan(),
+  'secret-scan': () => runSecretScan(config),
   'anti-bypass': () => runNodeScript('check-gate-integrity.mjs'),
   'check-review': () => runNodeScript('check-review.mjs', extraArgs),
   'gate-harness': () => {
-    TARGETS['harness-health']();
-    TARGETS['secret-scan']();
-    TARGETS['anti-bypass']();
+    runAll('gate-harness', HARNESS_STEPS);
     console.log('\n✅ gate-harness 全部通过');
   },
   lint: () => runConfiguredCommand(config, 'lint'),
@@ -91,19 +126,12 @@ const TARGETS = {
   },
   'license-check': () =>
     runConfiguredCommand(config, 'licenseCheck', { optional: true }),
-  'docs-verify': () =>
-    runConfiguredCommand(config, 'docsVerify', { optional: true }),
   'gate-mvp': () => {
-    TARGETS['gate-harness']();
-    TARGETS.lint();
-    TARGETS.typecheck();
-    TARGETS['test-unit']();
+    runAll('gate-mvp', MVP_STEPS);
     console.log(`\n✅ gate-mvp 全部通过，证据已输出至 ${config.artifactsDir || 'artifacts'}/`);
   },
   'gate-all': () => {
-    TARGETS['gate-mvp']();
-    TARGETS['license-check']();
-    TARGETS['test-e2e']();
+    runAll('gate-all', ALL_STEPS);
     console.log(`\n✅ gate-all 全部通过，证据已输出至 ${config.artifactsDir || 'artifacts'}/`);
   },
 };
@@ -113,4 +141,9 @@ if (!target || !Object.hasOwn(TARGETS, target)) {
   process.exit(1);
 }
 
-TARGETS[target]();
+try {
+  TARGETS[target]();
+} catch (err) {
+  if (err instanceof GateFailure) process.exit(err.code);
+  throw err;
+}

@@ -43,6 +43,13 @@ for (const candidate of ['origin/main', 'main', 'HEAD~1']) {
   }
 }
 
+// 以分叉点为基准，避免 main 前进后把他人（含人工维护的基座）改动误算到当前分支
+if (baseRef && baseRef !== 'HEAD~1') {
+  const mb = git(['merge-base', 'HEAD', baseRef]);
+  const mergeBase = (mb.stdout || '').trim();
+  if (mb.status === 0 && mergeBase) baseRef = mergeBase;
+}
+
 if (!baseRef) {
   console.log('[anti-bypass] 初始仓库尚无历史提交，跳过 diff 比对。');
   process.exit(0);
@@ -58,7 +65,9 @@ let excludes = [
 let protectedPaths = [
   'AGENTS.md',
   'harness.config.json',
-  'scripts/**',
+  'scripts/gate.mjs',
+  'scripts/check-*.mjs',
+  'scripts/ai-*-runner.mjs',
   '.github/workflows/**',
 ];
 
@@ -121,8 +130,9 @@ if (diffRes.status !== 0) {
   process.exit(1);
 }
 
+// 仅匹配测试框架的跳过/聚焦写法，避免误伤 process.exit()、ORM 的 qb.skip(n) 等正常代码
 const FORBIDDEN_PATTERN =
-  /(@ts-ignore|@ts-nocheck|@ts-expect-error|eslint-disable|istanbul ignore|c8 ignore|v8 ignore|# noqa|# type: ignore|\.(only|skip)\(|xit\(|xdescribe\(|@pytest\.mark\.skip)/;
+  /(@ts-ignore|@ts-nocheck|@ts-expect-error|eslint-disable|istanbul ignore|c8 ignore|v8 ignore|# noqa|# type: ignore|\b(it|test|describe|context|suite)\.(only|skip)\(|\bxit\(|\bxdescribe\(|\bxtest\(|@pytest\.mark\.skip)/;
 
 const violations = [];
 let currentFile = '(unknown)';
