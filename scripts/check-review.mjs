@@ -33,10 +33,21 @@ if (raw.length < 60) {
   process.exit(1);
 }
 
+// 容忍模型常见的 Markdown 修饰：**VERDICT: PASS**、`VERDICT: PASS`、## VERDICT: PASS、> VERDICT: PASS
 const verdictLines = raw
   .split('\n')
-  .map((line) => line.trim())
-  .filter((line) => /^VERDICT:\s*(PASS|BLOCK)$/.test(line));
+  .map((line) =>
+    line
+      .trim()
+      .replace(/^(?:[#>]+\s*)+/, '')
+      .replace(/[*_`]/g, '')
+      .trim(),
+  )
+  .map((line) => {
+    const m = /^VERDICT\s*[:：]\s*(PASS|BLOCK)\.?$/i.exec(line);
+    return m ? `VERDICT: ${m[1].toUpperCase()}` : null;
+  })
+  .filter(Boolean);
 
 if (verdictLines.length === 0) {
   console.error('❌ [check-review] 评审报告缺少标准裁决行（VERDICT: PASS 或 VERDICT: BLOCK）。');

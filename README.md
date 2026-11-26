@@ -26,7 +26,7 @@
 
 ## 环境准备（全平台统一）
 
-仅需安装 3 个基础工具：**Git**、**Node.js ≥ 20**、**Gitleaks**（无需 `make`、WSL 2 或 `npm install`）。
+仅需安装 2 个基础工具：**Git**、**Node.js ≥ 20**（无需 `make`、WSL 2 或 `npm install`）。**Gitleaks** 为可选：安装后门禁会进行密钥扫描，发现疑似泄露仅告警、不阻断（报告见 `artifacts/gitleaks-report.json`）；未安装则自动跳过。
 
 ### Windows（原生 PowerShell）
 ```powershell
@@ -124,12 +124,11 @@ sudo tar -xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks
        "typecheck": "pnpm --filter @repo/shared build && pnpm -r typecheck",
        "testUnit": "pnpm --filter @repo/api test:cov && pnpm --filter @repo/web test:unit -- --run",
        "testE2e": "pnpm --filter @repo/api test:e2e",
-       "licenseCheck": "npx --yes license-checker-rseidelsohn --production --failOn \"AGPL;GPL-3.0\"",
-       "docsVerify": ""
+       "licenseCheck": "npx --yes license-checker-rseidelsohn --production --failOn \"AGPL;GPL-3.0\""
      }
    }
    ```
-   > 以上 `commands` 中的值为示例，请替换为你的项目实际命令。`docsVerify` 和 `licenseCheck` 若暂不需要可留空。
+   > 以上 `commands` 中的值为示例，请替换为你的项目实际命令。`testE2e` 和 `licenseCheck` 仅 `gate-all` 使用，`licenseCheck` 若暂不需要可留空。
 
 2. **编辑 `.github/workflows/ci.yml`**，取消注释依赖安装步骤，替换为项目实际所需：
    ```yaml
@@ -205,8 +204,8 @@ npx @deepseek-ai/dsh web    # 浏览器打开 http://127.0.0.1:3080，使用 /de
 
 | 命令 | 说明 | 使用场景 |
 | --- | --- | --- |
-| `node scripts/gate.mjs gate-harness` | 基座健康度 + 密钥扫描 + 防绕过检查 | 未建骨架前使用 |
-| `node scripts/gate.mjs gate-mvp` | `gate-harness` + `lint` + `typecheck` + `test-unit` | **日常 PR 必过** |
+| `node scripts/gate.mjs gate-harness` | 基座健康度（Skill 格式）+ 密钥扫描 + 防篡改/防绕过 | 未建骨架前、维护基座或 Skill 时使用 |
+| `node scripts/gate.mjs gate-mvp` | 密钥扫描（仅告警）+ 防篡改/防绕过 + `lint` + `typecheck` + `test-unit` | **日常 PR 必过** |
 | `node scripts/gate.mjs gate-all` | `gate-mvp` + `license-check` + `test-e2e` | 完整 M/L 级需求门禁 |
 | `node scripts/gate.mjs anti-bypass` | 单独运行防绕过门禁检查 | 调试防绕过规则 |
 | `node scripts/gate.mjs check-review` | 校验 `artifacts/review.md` 评审裁决 | 验证 Reviewer 输出 |

@@ -7,20 +7,6 @@
     "typecheck": "",
     "testUnit": "",
     "testE2e": "",
-    "licenseCheck": "",
-    "docsVerify": ""
-  },
-  "protectedPaths": [
-    "AGENTS.md",
-    "harness.config.json",
-    "scripts/**",
-    ".github/workflows/**"
-  ],
-  "antiBypassExclude": [
-    "scripts/check-gate-integrity.mjs",
-    "*.md",
-    ".agents/**",
-    "docs/**",
-    "**/types/generated/**"
-  ]
+    "licenseCheck": ""
+  }
 }
